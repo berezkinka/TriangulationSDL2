@@ -68,23 +68,27 @@ bool loop() {
     switch (e.type) {
     case SDL_QUIT:
       return false;
-    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEBUTTONDOWN: {
       double x = (double)e.button.x;
       double y = (double)e.button.y;
       points.emplace_back(x, y);
       break;
-    case SDL_KEYDOWN:
+    }
+    case SDL_KEYDOWN: {
 			switch (e.key.keysym.scancode) {
-				case SDL_SCANCODE_T:
+				case SDL_SCANCODE_T: {
 					triangles.clear();
 					triangulation();
 					break;
-        case SDL_SCANCODE_C:
+        }
+        case SDL_SCANCODE_C: {
 					points.clear();
 					triangles.clear();
-					break;					
-			}
+					break;
+        }
+      }
       break;
+    }
     }
   }
 
