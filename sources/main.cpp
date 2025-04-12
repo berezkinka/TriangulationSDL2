@@ -1,4 +1,5 @@
 #include <vector>
+#include <cmath>
 #include <SDL.h>
 #include <SDL2_gfxPrimitives.h>
 
@@ -30,11 +31,11 @@ public:
   Triangle(const Point& a, const Point& b, const Point& c) : a(a), b(b), c(c), ab(a, b), bc(b, c), ca(c, a) {}
   bool operator==(const Triangle& other) const {
     return (a == other.a && b == other.b && c == other.c) ||
-         (a == other.a && b == other.c && c == other.b) ||
-         (a == other.b && b == other.a && c == other.c) ||
-         (a == other.b && b == other.c && c == other.a) ||
-         (a == other.c && b == other.a && c == other.b) ||
-         (a == other.c && b == other.b && c == other.a);
+           (a == other.a && b == other.c && c == other.b) ||
+           (a == other.b && b == other.a && c == other.c) ||
+           (a == other.b && b == other.c && c == other.a) ||
+           (a == other.c && b == other.a && c == other.b) ||
+           (a == other.c && b == other.b && c == other.a);
   }
   std::vector<Edge> getEdges() const {
     return {ab, bc, ca};
@@ -135,21 +136,21 @@ void kill() {
 
 // Функция проверяет, что точка попадает в описанную окружность треугольника.
 bool isPointInCircumcircle(const Point& p, const Triangle& tri) {
-  double ax = tri.a.x - p.x, ay = tri.a.y - p.y;
-  double bx = tri.b.x - p.x, by = tri.b.y - p.y;
-  double cx = tri.c.x - p.x, cy = tri.c.y - p.y;
+  double adx = tri.a.x - p.x, ady = tri.a.y - p.y;
+  double bdx = tri.b.x - p.x, bdy = tri.b.y - p.y;
+  double cdx = tri.c.x - p.x, cdy = tri.c.y - p.y;
 
   double det = (
-      (ax * ax + ay * ay) * (bx * cy - by * cx) -
-      (bx * bx + by * by) * (ax * cy - ay * cx) +
-      (cx * cx + cy * cy) * (ax * by - ay * bx)
+    (adx * adx + ady * ady) * (bdx * cdy - bdy * cdx) -
+    (bdx * bdx + bdy * bdy) * (adx * cdy - ady * cdx) +
+    (cdx * cdx + cdy * cdy) * (adx * bdy - ady * bdx)
   );
 
-  return det > 0;
+  return det > 1e-10; // Порог для учёта ошибок округления.
 }
 
 void triangulation() {
-  // Создаем супер-треугольник (он должен охватывать все точки).
+  // Создаем супер-треугольник с запасом (он должен охватывать все точки).
   double minX = points[0].x, maxX = points[0].x;
   double minY = points[0].y, maxY = points[0].y;
   
@@ -161,9 +162,11 @@ void triangulation() {
   }
 
   double dtx = maxX - minX, dty = maxY - minY;
-  Point a(minX - dtx, minY - dty);
-  Point b(maxX + dtx, minY - dty);
-  Point c(minX + dtx / 2, maxY + dty);
+  double margin = std::max(dtx, dty) * 10;
+
+  Point a(minX - margin, minY - margin);
+  Point b(maxX + margin, minY - margin);
+  Point c(minX + dtx / 2, maxY + margin);
 
   Triangle superTriangle = Triangle(a, b, c);
   triangles.push_back(superTriangle);
@@ -204,7 +207,7 @@ void triangulation() {
       std::erase(triangles, triangle);
     }
 
-    // Добавляем новые треугольники из рёбер многоугольника и точки point.
+    // Добавляем новые треугольники из рёбер и точки point.
     for (const auto& edge : polygonEdges) {
       triangles.push_back(Triangle(edge.p1, edge.p2, point));
     }
