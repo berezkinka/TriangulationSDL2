@@ -28,11 +28,22 @@ public:
   Edge ab, bc, ca;
   
   Triangle(const Point& a, const Point& b, const Point& c) : a(a), b(b), c(c), ab(a, b), bc(b, c), ca(c, a) {}
+  bool operator==(const Triangle& other) const {
+    return (a == other.a && b == other.b && c == other.c) ||
+         (a == other.a && b == other.c && c == other.b) ||
+         (a == other.b && b == other.a && c == other.c) ||
+         (a == other.b && b == other.c && c == other.a) ||
+         (a == other.c && b == other.a && c == other.b) ||
+         (a == other.c && b == other.b && c == other.a);
+  }
   std::vector<Edge> getEdges() const {
     return {ab, bc, ca};
   }
-  bool hasEdge(const Edge& other) {
-    return (ab == other) || (bc == other) || (ca == other);
+  bool hasVertex(const Point& p) const {
+    return a == p || b == p || c == p;
+  }
+  bool hasEdge(const Edge& e) const {
+    return (ab == e) || (bc == e) || (ca == e);
   }
 };
 
@@ -154,7 +165,8 @@ void triangulation() {
   Point b(maxX + dtx, minY - dty);
   Point c(minX + dtx / 2, maxY + dty);
 
-  triangles.push_back(Triangle(a, b, c));
+  Triangle superTriangle = Triangle(a, b, c);
+  triangles.push_back(superTriangle);
 
   // Добавляем точки.
   for (const auto& point : points) {
@@ -166,8 +178,46 @@ void triangulation() {
           badTriangles.push_back(triangle);
       }
     }
-    // Работа с рёбрами. 
 
+    // Найдём ребра, которые принадлежат только одному такому треугольнику,
+    // они образуют границу многоугольника.
+    std::vector<Edge> polygonEdges;
+    for (const auto& triangle : badTriangles) {
+      std::vector<Edge> edges = triangle.getEdges();
+      for (const auto& edge : edges) { 
+        bool isShared = false;     
+        for (const auto& otherTriangle : badTriangles) {
+          if (triangle == otherTriangle) continue;
+          if (otherTriangle.hasEdge(edge)) {
+            isShared = true;
+            break;
+          }
+        }
+        if (!isShared) {
+          polygonEdges.push_back(edge);
+        }
+      }
+    }
+
+    // Удаляем плохие треугольники.
+    for (const auto& triangle : badTriangles) {
+      std::erase(triangles, triangle);
+    }
+
+    // Добавляем новые треугольники из рёбер многоугольника и точки point.
+    for (const auto& edge : polygonEdges) {
+      triangles.push_back(Triangle(edge.p1, edge.p2, point));
+    }
+  }
+  // Удаляем треугольники, связанные с вершинами супер-треугольника.
+  std::vector<Triangle> trianglesToRemove;
+  for (const auto& triangle : triangles) {
+    if (triangle.hasVertex(superTriangle.a) || triangle.hasVertex(superTriangle.b) || triangle.hasVertex(superTriangle.c)) {
+      trianglesToRemove.push_back(triangle); 
+    } 
+  }
+  for (const auto& triangle : trianglesToRemove) {
+    std::erase(triangles, triangle);
   }
 }
 
