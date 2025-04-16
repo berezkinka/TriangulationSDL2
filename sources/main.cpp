@@ -1,52 +1,6 @@
-#include <vector>
-#include <cmath>
+#include "primitives.hpp"
 #include <SDL.h>
 #include <SDL2_gfxPrimitives.h>
-
-class Point {
-public:
-  double x, y;
-
-  Point(double x = 0, double y = 0) : x(x), y(y) {}
-  bool operator==(const Point& other) const {
-    return x == other.x && y == other.y;
-  }
-};
-
-class Edge {
-public:
-  Point p1, p2;
-  
-  Edge(const Point& p1, const Point& p2) : p1(p1), p2(p2) {}
-  bool operator==(const Edge& other) const {
-    return (p1 == other.p1 && p2 == other.p2) || (p1 == other.p2 && p2 == other.p1);
-  }
-};
-
-class Triangle {
-public:
-  Point a, b, c;
-  Edge ab, bc, ca;
-  
-  Triangle(const Point& a, const Point& b, const Point& c) : a(a), b(b), c(c), ab(a, b), bc(b, c), ca(c, a) {}
-  bool operator==(const Triangle& other) const {
-    return (a == other.a && b == other.b && c == other.c) ||
-           (a == other.a && b == other.c && c == other.b) ||
-           (a == other.b && b == other.a && c == other.c) ||
-           (a == other.b && b == other.c && c == other.a) ||
-           (a == other.c && b == other.a && c == other.b) ||
-           (a == other.c && b == other.b && c == other.a);
-  }
-  std::vector<Edge> getEdges() const {
-    return {ab, bc, ca};
-  }
-  bool hasVertex(const Point& p) const {
-    return a == p || b == p || c == p;
-  }
-  bool hasEdge(const Edge& e) const {
-    return (ab == e) || (bc == e) || (ca == e);
-  }
-};
 
 std::vector<Point> points;
 std::vector<Triangle> triangles;
@@ -155,10 +109,10 @@ void triangulation() {
   double minY = points[0].y, maxY = points[0].y;
   
   for (const auto& p : points) {
-      minX = std::min(minX, p.x);
-      maxX = std::max(maxX, p.x);
-      minY = std::min(minY, p.y);
-      maxY = std::max(maxY, p.y);
+    minX = std::min(minX, p.x);
+    maxX = std::max(maxX, p.x);
+    minY = std::min(minY, p.y);
+    maxY = std::max(maxY, p.y);
   }
 
   double dtx = maxX - minX, dty = maxY - minY;
@@ -172,10 +126,8 @@ void triangulation() {
   triangles.push_back(superTriangle);
 
   // Добавляем точки.
-  for (const auto& point : points) {
-    
-    std::vector<Triangle> badTriangles; // Треугольники, в описанную окружность которых попадает точка.
-    
+  for (const auto& point : points) {    
+    std::vector<Triangle> badTriangles; // Треугольники, в описанную окружность которых попадает точка.    
     for (const auto& triangle : triangles) {
       if (isPointInCircumcircle(point, triangle)) {
           badTriangles.push_back(triangle);
